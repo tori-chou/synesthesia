@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spectral Canvas</title>
+  <link rel="stylesheet" href="style.css?v=11" />
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <div id="toolbar">
+    <button id="btn-play">Play</button>
+    <button id="btn-clear">Clear</button>
+
+    <div id="palette">
+      <button class="swatch active" data-r="255" data-g="255" data-b="255"
+              style="background:#fff" title="White — neutral"></button>
+      <button class="swatch" data-r="0"   data-g="220" data-b="255"
+              style="background:#00dcff" title="Cyan — pure sine"></button>
+      <button class="swatch" data-r="160" data-g="80"  data-b="255"
+              style="background:#a050ff" title="Violet — subtle FM"></button>
+      <button class="swatch" data-r="255" data-g="120" data-b="0"
+              style="background:#ff7800" title="Orange — warm FM"></button>
+      <button class="swatch" data-r="255" data-g="20"  data-b="60"
+              style="background:#ff143c" title="Red — heavy FM"></button>
+      <button class="swatch" id="eraser" data-r="0" data-g="0" data-b="0"
+              title="Erase">✕</button>
+    </div>
+
+    <label class="ctrl">
+      Brush
+      <input type="range" id="brush-size" min="4" max="80" value="18" />
+    </label>
+    <label class="ctrl">
+      Speed
+      <input type="range" id="speed" min="20" max="400" value="100" />
+    </label>
+  </div>
+
+  <script type="module" src="src/app.js?v=11"></script>
+</body>
+</html>
