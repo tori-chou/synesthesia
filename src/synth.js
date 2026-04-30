@@ -1,28 +1,26 @@
 /**
  * Synth — additive FM oscillator bank.
- *
  * 32 bands are tuned to A minor pentatonic across 6+ octaves (A1–C8),
  * so any combination of notes the cursor reads will always sound in-key.
  *
  * Per band:
- *   modulator ──→ modGain ──→ carrier.frequency   (FM patch)
- *   carrier   ──→ outGain ──→ dry + reverb send
+ *   modulator → modGain → carrier.frequency 
+ *   carrier → outGain → dry + reverb send
  *
  * update(amplitudes, fmAmounts) is called every animation frame.
- *   amplitudes[i]  0–1  →  output gain of band i
- *   fmAmounts[i]   0–1  →  FM modulation depth (warm color = more FM)
+ *   amplitudes[i] 0–1 → output gain of band i
+ *   fmAmounts[i] 0–1 → FM modulation depth (warm color = more FM)
  *
  * Voice limiting: only the MAX_VOICES loudest bands play at once.
- * Attack is fast; release is slow so notes ring out after the cursor passes.
  */
 
 import { N_BANDS } from './constants.js';
 
-const MAX_FM_DEPTH = 160;  // Hz of frequency deviation at fmAmount = 1
-const BAND_GAIN    = 0.13; // per-band level (fewer voices → a bit louder each)
-const MAX_VOICES   = 6;    // max simultaneous oscillators
-const TC_ATTACK    = 0.02; // 20 ms — snappy onset
-const TC_RELEASE   = 0.20; // 200 ms — notes ring out after cursor passes
+const MAX_FM_DEPTH = 160; // Hz of frequency deviation at fmAmount = 1
+const BAND_GAIN = 0.13; // per-band level (fewer voices → a bit louder each)
+const MAX_VOICES = 6; // max simultaneous oscillators
+const TC_ATTACK = 0.02; 
+const TC_RELEASE = 0.20; // so notes ring out after cursor passes
 
 // A minor pentatonic: semitone offsets 0,3,5,7,10 repeating each octave from A1=55 Hz
 function buildPentatonicFreqs(n) {
@@ -101,14 +99,13 @@ export class Synth {
   update(amplitudes, fmAmounts) {
     const now = this.ctx.currentTime;
 
-    // Pick the MAX_VOICES loudest bands; silence the rest
+    // Pick the MAX_VOICES loudest bands, silence the rest
     const order = Array.from({ length: N_BANDS }, (_, i) => i)
       .sort((a, b) => amplitudes[b] - amplitudes[a]);
     const active = new Set(order.slice(0, MAX_VOICES));
 
     for (let i = 0; i < N_BANDS; i++) {
       const target = active.has(i) ? amplitudes[i] : 0;
-      // Fast attack when a note is hit; slow release so it rings out
       const tc = target > this._lastTarget[i] ? TC_ATTACK : TC_RELEASE;
       this._bands[i].outGain.gain.setTargetAtTime(target * BAND_GAIN, now, tc);
       this._bands[i].modGain.gain.setTargetAtTime(fmAmounts[i] * MAX_FM_DEPTH, now, tc);
@@ -126,7 +123,7 @@ export class Synth {
 }
 
 function makeReverbIR(ctx, duration, decay) {
-  const n   = Math.round(ctx.sampleRate * duration);
+  const n = Math.round(ctx.sampleRate * duration);
   const buf = ctx.createBuffer(2, n, ctx.sampleRate);
   for (let c = 0; c < 2; c++) {
     const ch = buf.getChannelData(c);

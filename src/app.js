@@ -1,24 +1,24 @@
 import { Synth, BAND_FREQS } from './synth.js';
-import { Sketch }            from './sketch.js';
-import { N_BANDS }           from './constants.js';
+import { Sketch } from './sketch.js';
+import { N_BANDS } from './constants.js';
 
 // --- DOM ---
-const canvas     = document.getElementById('canvas');
-const ctx        = canvas.getContext('2d');
-const btnPlay    = document.getElementById('btn-play');
-const btnClear   = document.getElementById('btn-clear');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const btnPlay = document.getElementById('btn-play');
+const btnClear = document.getElementById('btn-clear');
 const brushInput = document.getElementById('brush-size');
 const speedInput = document.getElementById('speed');
 
 // --- State ---
 let audioCtx = null;
-let synth    = null;
-let sketch   = null;
-let playing  = false;
-let cursorX  = 0;
-let speed    = 100;
+let synth = null;
+let sketch = null;
+let playing = false;
+let cursorX = 0;
+let speed = 100;
 let lastTime = 0;
-let raf      = null;
+let raf = null;
 
 // Tick lines at each A note in the pentatonic scale (exact band positions)
 const FREQ_TICKS = BAND_FREQS
@@ -38,7 +38,7 @@ function stageSize() {
 
 function resize() {
   const [w, h] = stageSize();
-  canvas.width  = w;
+  canvas.width = w;
   canvas.height = h;
   sketch?.resize(w, h);
 }
@@ -48,7 +48,7 @@ window.addEventListener('resize', resize);
 // Defer init one frame so the browser has painted and window dimensions are stable
 requestAnimationFrame(() => {
   const [w, h] = stageSize();
-  canvas.width  = w;
+  canvas.width = w;
   canvas.height = h;
   sketch = new Sketch(w, h);
   sketch.brushSize = Number(brushInput.value);
@@ -72,7 +72,7 @@ canvas.addEventListener('mousemove', e => {
   if (!sketch || !isDown) return;
   sketch.continueStroke(...canvasPos(e));
 });
-canvas.addEventListener('mouseup',    () => { isDown = false; });
+canvas.addEventListener('mouseup', () => { isDown = false; });
 canvas.addEventListener('mouseleave', () => { isDown = false; });
 
 canvas.addEventListener('touchstart', e => {
@@ -101,17 +101,17 @@ document.querySelectorAll('.swatch').forEach(btn => {
 
 brushInput.addEventListener('input', () => { sketch.brushSize = Number(brushInput.value); });
 speedInput.addEventListener('input', () => { speed = Number(speedInput.value); });
-btnClear.addEventListener('click',   () => { sketch.clear(); });
-btnPlay.addEventListener('click',    () => playing ? pause() : play());
+btnClear.addEventListener('click', () => { sketch.clear(); });
+btnPlay.addEventListener('click', () => playing ? pause() : play());
 
 // --- Playback ---
 async function play() {
   if (!audioCtx) {
     audioCtx = new AudioContext();
-    synth    = new Synth(audioCtx);
+    synth = new Synth(audioCtx);
   }
   if (audioCtx.state === 'suspended') await audioCtx.resume();
-  playing  = true;
+  playing = true;
   lastTime = performance.now();
   btnPlay.textContent = 'Pause';
   cancelAnimationFrame(raf);
@@ -154,7 +154,7 @@ function render(amplitudes) {
 
   // Frequency axis grid lines
   ctx.save();
-  ctx.font      = '10px monospace';
+  ctx.font = '10px monospace';
   ctx.textAlign = 'left';
   for (const { normY, label } of FREQ_TICKS) {
     const y = normY * H;
@@ -162,7 +162,7 @@ function render(amplitudes) {
     ctx.moveTo(0, y);
     ctx.lineTo(W, y);
     ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    ctx.lineWidth   = 0.5;
+    ctx.lineWidth = 0.5;
     ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
     ctx.fillText(label, 6, y - 3);
@@ -175,11 +175,11 @@ function render(amplitudes) {
     for (let b = 0; b < N_BANDS; b++) {
       const amp = amplitudes[b];
       if (amp < 0.015) continue;
-      const y    = (N_BANDS - 1 - b) * bandH;
+      const y = (N_BANDS - 1 - b) * bandH;
       const glow = ctx.createLinearGradient(cursorX - 30, 0, cursorX + 30, 0);
-      glow.addColorStop(0,   'rgba(255,255,255,0)');
+      glow.addColorStop(0, 'rgba(255,255,255,0)');
       glow.addColorStop(0.5, `rgba(255,255,255,${(amp * 0.8).toFixed(3)})`);
-      glow.addColorStop(1,   'rgba(255,255,255,0)');
+      glow.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = glow;
       ctx.fillRect(cursorX - 30, y, 60, bandH + 1);
     }
@@ -187,7 +187,7 @@ function render(amplitudes) {
     ctx.moveTo(cursorX, 0);
     ctx.lineTo(cursorX, H);
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth   = 1.5;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
   }
 }
