@@ -110,6 +110,22 @@ select {
 select:hover { border-color: #fff; color: #fff; }
 select option { background: #0a0a14; }
 
+/* Blog link styled as toolbar button */
+#btn-blog {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  padding: 5px 14px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+#btn-blog:hover { border-color: #fff; color: #fff; }
+
 /* Info button */
 #btn-info {
   padding: 5px 10px;

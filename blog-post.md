@@ -49,7 +49,7 @@ export function buildFreqs(steps, n = N_BANDS, rootHz = 55) {
 
 The pentatonic default is a deliberate UX choice. Any combination of active bands will sound good together, which means you can draw freely without accidentally producing dissonant clusters. This removes a significant barrier for non-musicians while still giving musically literate users enough structure to work intentionally.
 
-Bands are laid out with low frequencies at the bottom of the canvas and high frequencies at the top  like a spectogram. When you switch scales mid-playback, `retune()` uses `setTargetAtTime` rather than an instant value jump to avoid click artifacts:
+Bands are laid out with low frequencies at the bottom of the canvas and high frequencies at the top  like a spectrogram. When you switch scales mid-playback, `retune()` uses `setTargetAtTime` rather than an instant value jump to avoid click artifacts:
 
 ```js
 retune(freqs) {

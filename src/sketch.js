@@ -1,9 +1,10 @@
 /**
- * Sketch — persistent drawing surface backed by an offscreen canvas.
+ * Sketch-persistent drawing surface backed by an offscreen canvas.
  *
  * Color → timbre mapping (read by readColumn):
- * luminance  →  oscillator amplitude
- * max(0, R−B)/255  →  FM modulation depth  (warm = buzzy, cool = pure)
+ * luminance → oscillator amplitude
+ * max(0, R−B)/255 → FM modulation depth (warm = buzzy, cool = pure)
+ * G/255 → vibrato depth (green = shimmery pitch wobble)
  */
 
 import { N_BANDS } from './constants.js';
@@ -46,7 +47,7 @@ export class Sketch {
 
   /**
    * Sample one pixel column and return per-band audio parameters.
-   * @returns {{ amplitudes: Float32Array, fmAmounts: Float32Array }}
+   * @returns {{ amplitudes: Float32Array, fmAmounts: Float32Array, vibratoAmounts: Float32Array }}
    */
   readColumn(x) {
     const col = Math.max(0, Math.min(Math.floor(x), this._el.width - 1));

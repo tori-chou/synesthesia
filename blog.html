@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synesthesia — Blog</title>
+  <link rel="stylesheet" href="style.css?v=13" />
+  <style>
+    body { user-select: text; }
+
+    #blog-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    #blog-back {
+      display: inline-block;
+      margin-bottom: 48px;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.35);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #blog-back:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+    .blog-title {
+      font-size: 1.35rem;
+      font-weight: normal;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 1.4;
+      margin-bottom: 36px;
+    }
+
+    .blog-body h2 {
+      font-size: 0.88rem;
+      font-weight: normal;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      margin: 44px 0 14px;
+    }
+
+    .blog-body p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.85;
+      margin-bottom: 16px;
+    }
+
+    .blog-body strong {
+      color: rgba(255,255,255,0.88);
+      font-weight: normal;
+    }
+
+    .blog-body em { font-style: italic; }
+
+    .blog-body hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin: 40px 0;
+    }
+
+    .blog-body pre {
+      background: #0d0d1a;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 16px 18px;
+      overflow-x: auto;
+      margin: 18px 0 22px;
+    }
+
+    .blog-body code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.76rem;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.7;
+    }
+
+    .blog-body p code, .blog-body li code {
+      background: rgba(255,255,255,0.06);
+      padding: 1px 5px;
+    }
+
+    .blog-body ol {
+      padding-left: 20px;
+      margin-bottom: 16px;
+    }
+    .blog-body ol li {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.85;
+      margin-bottom: 8px;
+    }
+    .blog-body ol li strong { color: rgba(255,255,255,0.88); }
+
+    .signal-chain {
+      font-family: 'Courier New', monospace;
+      font-size: 0.76rem;
+      color: rgba(255,255,255,0.6);
+      background: #0d0d1a;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 14px 18px;
+      margin: 18px 0 22px;
+      line-height: 1.9;
+    }
+  </style>
+</head>
+<body>
+
+<div id="blog-wrap">
+  <a id="blog-back" href="index.html">← back to synesthesia</a>
+
+  <h1 class="blog-title">Synesthesia: a color-to-timbre synthesizer with the Web Audio API</h1>
+
+  <div class="blog-body">
+
+    <p>
+      My project, <em>Synesthesia</em>, is inspired by the incredible neurological phenomenon
+      where one might perceive sound as color. You draw on a canvas with colored brushes, then a
+      playback cursor scans left to right and plays what it finds. The interesting design challenge
+      is the question of how color maps to timbre, and how to make an instrument that maps to
+      musical intuition.
+    </p>
+
+    <hr>
+
+    <h2>The canvas as a score</h2>
+
+    <p>
+      The core architecture separates drawing from display. There are two canvases: an offscreen
+      <code>Sketch</code> canvas that holds the actual painted marks, and a visible display canvas
+      that composites the sketch with a real-time overlay. The synth reads only from the offscreen
+      canvas.
+    </p>
+
+    <p>On each animation frame, the app calls <code>getImageData</code> on a single pixel column at the cursor position:</p>
+
+    <pre><code>readColumn(x) {
+  const col = Math.max(0, Math.min(Math.floor(x), this._el.width - 1));
+  const pixels = this._ctx.getImageData(col, 0, 1, this._el.height).data;
+  return pixelsToBands(pixels, this._el.height);
+}</code></pre>
+
+    <p>
+      Reading one column per frame is cheap. <code>getImageData</code> on a 1×H slice is far less
+      expensive than reading the full canvas, and it gives us a clean separation between the
+      drawing surface and the audio analysis. The returned pixel data is then divided into 32
+      vertical bands, each mapped to a frequency in the active scale.
+    </p>
+
+    <hr>
+
+    <h2>Staying in key</h2>
+
+    <p>
+      The synthesizer has 32 oscillators, each tuned to a note in a musical scale. The default is
+      A minor pentatonic, spanning about six octaves up to the top of the audible range:
+    </p>
+
+    <pre><code>export const SCALES = {
+  pentatonic: [0, 3, 5, 7, 10],
+  major:      [0, 2, 4, 5, 7, 9, 11],
+  minor:      [0, 2, 3, 5, 7, 8, 10],
+  dorian:     [0, 2, 3, 5, 7, 9, 10],
+  wholetone:  [0, 2, 4, 6, 8, 10],
+};
+
+export function buildFreqs(steps, n = N_BANDS, rootHz = 55) {
+  const freqs = [];
+  for (let oct = 0; freqs.length &lt; n; oct++) {
+    for (const st of steps) {
+      freqs.push(rootHz * Math.pow(2, oct + st / 12));
+      if (freqs.length &gt;= n) break;
+    }
+  }
+  return freqs;
+}</code></pre>
+
+    <p>
+      The pentatonic default is a deliberate UX choice. Any combination of active bands will sound
+      good together, which means you can draw freely without accidentally producing dissonant
+      clusters. This removes a significant barrier for non-musicians while still giving musically
+      literate users enough structure to work intentionally.
+    </p>
+
+    <p>
+      Bands are laid out with low frequencies at the bottom of the canvas and high frequencies at
+      the top like a spectrogram. When you switch scales mid-playback, <code>retune()</code> uses
+      <code>setTargetAtTime</code> rather than an instant value jump to avoid click artifacts:
+    </p>
+
+    <pre><code>retune(freqs) {
+  const now = this.ctx.currentTime;
+  for (let i = 0; i &lt; N_BANDS; i++) {
+    this._bands[i].car.frequency.setTargetAtTime(freqs[i], now, 0.05);
+    this._bands[i].mod.frequency.setTargetAtTime(freqs[i] * 2, now, 0.05);
+  }
+}</code></pre>
+
+    <p>The 50ms time constant means the retune is a brief glide rather than a hard jump.</p>
+
+    <hr>
+
+    <h2>Three channels, three parameters</h2>
+
+    <p>
+      The most interesting design decision in the whole project is how the RGB channels map to
+      audio parameters. Each pixel column encodes three independent synthesis dimensions:
+    </p>
+
+    <p>
+      <strong>Luminance → amplitude.</strong> The average of R, G, B gives perceived brightness,
+      which maps to oscillator output gain. This is the most intuitive mapping, as bright paint is
+      loud, and dark paint is quiet.
+    </p>
+
+    <p>
+      <strong>R − B (warm/cool balance) → FM depth.</strong> If a pixel has more red than blue,
+      it drives frequency modulation deeper. Warm colors (orange, red) become rich and buzzy; cool
+      colors (cyan, blue) stay as near-pure sines. The formula goes to zero for cool-dominant
+      pixels so there's no "negative FM":
+    </p>
+
+    <pre><code>fmSum += Math.max(0, (r - bl) / 255);</code></pre>
+
+    <p>
+      <strong>G → vibrato depth.</strong> The green values exclusively drives the depth of a
+      per-band LFO. Green paint shimmers and wobbles; non-green paint is stable. This makes all
+      three channels musically meaningful and gives the color picker an expressive dimension
+      beyond aesthetics.
+    </p>
+
+    <hr>
+
+    <h2>The FM synthesis</h2>
+
+    <p>Each of the 32 bands is a two-operator FM voice with a Carrier-to-Modulator ratio of 1:2:</p>
+
+    <div class="signal-chain">
+modulator (freq × 2) → modGain → carrier.frequency<br>
+carrier → outGain → dry bus + reverb send
+    </div>
+
+    <p>A 1:2 ratio produces more harmonic and consonant sidebands.</p>
+
+    <pre><code>const MAX_FM_DEPTH = 160; // Hz of carrier frequency deviation at fmAmount = 1</code></pre>
+
+    <hr>
+
+    <h2>Vibrato via Per-Band LFO</h2>
+
+    <p>Each band also has an LFO connected directly to the carrier's frequency AudioParam:</p>
+
+    <div class="signal-chain">
+lfo (5.5 Hz sine) → lfoGain → carrier.frequency
+    </div>
+
+    <p>
+      The 5.5 Hz rate is in the classical vibrato range (typically 5–7 Hz). Depth is capped at
+      ±8 Hz, which is subtle enough not to destabilize the pitch but clearly audible on sustained
+      notes. Because LFOs are per-band, you can have vibrato on a mid-register note while the
+      bass and treble remain steady.
+    </p>
+
+    <p>
+      The LFO gain is driven by the green channel the same way FM depth is driven by the warm/cool
+      balance: smoothed through <code>setTargetAtTime</code> on each frame so rapid cursor
+      movement doesn't cause gain discontinuities.
+    </p>
+
+    <hr>
+
+    <h2>Voice Limiting and Envelopes</h2>
+
+    <p>
+      With 32 oscillators all running simultaneously, a dense painting could easily overload the
+      output bus. Voice limiting caps the polyphony at 6 simultaneous voices (the 6 bands with
+      the highest amplitude at each frame).
+    </p>
+
+    <pre><code>const order = Array.from({ length: N_BANDS }, (_, i) => i)
+  .sort((a, b) => amplitudes[b] - amplitudes[a]);
+const active = new Set(order.slice(0, MAX_VOICES));</code></pre>
+
+    <p>
+      Silencing isn't instant. Each voice uses a fast attack (20ms) and a slower release (200ms),
+      so notes that pass under the cursor ring out briefly rather than cutting abruptly. This gives
+      the instrument a slightly legato character.
+    </p>
+
+    <hr>
+
+    <h2>Output chain</h2>
+
+    <ol>
+      <li><strong>Per-band output gain</strong>: scales each band by 0.13 to prevent clipping with multiple voices active</li>
+      <li><strong>Dry/wet split</strong>: 62% goes straight to the compressor; 38% is sent through a convolution reverb</li>
+      <li><strong>Synthetic reverb IR</strong>: the impulse response is generated procedurally at startup: two channels of exponentially-decaying noise, 2.8 seconds long</li>
+      <li><strong>Dynamics compressor</strong>: threshold −18 dBFS, ratio 10:1, 4ms attack, 200ms release</li>
+    </ol>
+
+    <hr>
+
+    <h2>Additive Blending: Making Overdrawing Musical</h2>
+
+    <p>
+      The brush uses <code>globalCompositeOperation = 'lighter'</code> rather than
+      <code>'source-over'</code>. In lighter mode, overlapping paint strokes add their RGB values
+      together (clamped to 255). This means drawing over an existing mark increases luminance,
+      which, through the amplitude mapping, makes that region louder. You can layer strokes to
+      build up complex amplitude contours, and the brightness of the painting directly encodes the
+      dynamic intensity of the sound. Erasing uses <code>'source-over'</code> with black fill to
+      subtract paint back to silence.
+    </p>
+
+    <hr>
+
+    <h2>What I'd Do Next</h2>
+
+    <p>
+      <strong>Microphone input as brush.</strong> Route mic audio through a real-time FFT and
+      paint the spectrum onto the canvas as the sound plays, then play it back. The canvas becomes
+      a spectrogram of something you sang or played.
+    </p>
+
+    <p>
+      <strong>Per-band LFO rate variation.</strong> Currently all 32 LFOs run at the same 5.5 Hz.
+      Mapping LFO rate to, say, vertical position (faster vibrato in the treble, slower in the
+      bass) would add a more organic quality.
+    </p>
+
+    <p>
+      The core insight of the project, that a three-channel color value maps to a complete timbral
+      instruction, has a lot of room left to explore. I hope to implement more features in the
+      future!
+    </p>
+
+  </div>
+</div>
+
+</body>
+</html>

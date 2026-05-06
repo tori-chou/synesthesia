@@ -4,12 +4,12 @@
  *
  * Per band:
  *   modulator  → modGain  → carrier.frequency  (FM)
- *   lfo        → lfoGain  → carrier.frequency  (vibrato)
- *   carrier    → outGain  → dry + reverb send
+ *   lfo → lfoGain  → carrier.frequency  (vibrato)
+ *   carrier → outGain  → dry + reverb send
  *
  * update(amplitudes, fmAmounts, vibratoAmounts) called every animation frame.
- *   amplitudes[i]     0–1 → output gain
- *   fmAmounts[i]      0–1 → FM modulation depth  (warm/red = buzzy)
+ *   amplitudes[i] 0–1 → output gain
+ *   fmAmounts[i] 0–1 → FM modulation depth  (warm/red = buzzy)
  *   vibratoAmounts[i] 0–1 → LFO pitch wobble depth (green = shimmery)
  *
  * retune(freqs) smoothly resets all oscillator frequencies (scale change).
