@@ -95,3 +95,137 @@ input[type=range]::-webkit-slider-thumb {
   background: #fff;
   cursor: pointer;
 }
+
+select {
+  -webkit-appearance: none;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  padding: 3px 8px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+}
+select:hover { border-color: #fff; color: #fff; }
+select option { background: #0a0a14; }
+
+/* Info button */
+#btn-info {
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Modal overlay */
+#info-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#info-overlay.hidden { display: none; }
+
+#info-box {
+  position: relative;
+  background: #0e0e1c;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 28px 32px 24px;
+  max-width: 460px;
+  width: calc(100% - 40px);
+}
+
+#info-box h2 {
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  color: #fff;
+  margin-bottom: 10px;
+}
+#info-box h3 {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4);
+  margin: 20px 0 10px;
+  text-transform: uppercase;
+}
+#info-box p {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+#btn-close-info {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.9rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+#btn-close-info:hover { color: #fff; border-color: transparent; }
+
+/* Legend table */
+#legend {
+  width: 100%;
+  border-collapse: collapse;
+}
+#legend tr + tr td { padding-top: 12px; }
+#legend td { vertical-align: middle; }
+
+.legend-swatch-cell {
+  width: 80px;
+  padding-right: 16px;
+}
+.legend-gradient {
+  display: block;
+  height: 10px;
+  border-radius: 2px;
+}
+
+#legend strong {
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 2px;
+}
+#legend span {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.4;
+}
+
+/* Swatch guide list */
+#swatch-guide {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+#swatch-guide li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.73rem;
+  color: rgba(255,255,255,0.55);
+}
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

@@ -96,10 +96,14 @@ export class Sketch {
   }
 }
 
-// Amplitudes + FM modulation amount determined according to color
+// Color → audio parameter mapping:
+//   luminance      → amplitude
+//   max(0, R−B)    → FM depth   (warm/red = buzzy)
+//   G channel      → vibrato    (green = shimmery pitch wobble)
 function pixelsToBands(pixels, canvasHeight) {
   const amplitudes = new Float32Array(N_BANDS);
   const fmAmounts = new Float32Array(N_BANDS);
+  const vibratoAmounts = new Float32Array(N_BANDS);
   const bandH = canvasHeight / N_BANDS;
 
   for (let b = 0; b < N_BANDS; b++) {
@@ -109,16 +113,18 @@ function pixelsToBands(pixels, canvasHeight) {
     const count = rowEnd - rowStart;
     if (count === 0) continue;
 
-    let lumSum = 0, fmSum = 0;
+    let lumSum = 0, fmSum = 0, vibSum = 0;
     for (let row = rowStart; row < rowEnd; row++) {
       const i = row * 4;
       const r = pixels[i], g = pixels[i + 1], bl = pixels[i + 2];
       lumSum += (r + g + bl) / (3 * 255);
       fmSum += Math.max(0, (r - bl) / 255);
+      vibSum += g / 255;
     }
     amplitudes[b] = lumSum / count;
     fmAmounts[b] = fmSum / count;
+    vibratoAmounts[b] = vibSum / count;
   }
 
-  return { amplitudes, fmAmounts };
+  return { amplitudes, fmAmounts, vibratoAmounts };
 }

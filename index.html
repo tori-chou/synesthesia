@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Synesthesia</title>
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
 
@@ -13,12 +13,15 @@
   <div id="toolbar">
     <button id="btn-play">Play</button>
     <button id="btn-clear">Clear</button>
+    <button id="btn-info" title="Color legend">?</button>
 
     <div id="palette">
       <button class="swatch active" data-r="255" data-g="255" data-b="255"
               style="background:#fff" title="White — neutral"></button>
       <button class="swatch" data-r="0" data-g="220" data-b="255"
-              style="background:#00dcff" title="Cyan — pure sine"></button>
+              style="background:#00dcff" title="Cyan — sine + vibrato"></button>
+      <button class="swatch" data-r="0"   data-g="255" data-b="0"
+              style="background:#00ff00" title="Green — pure vibrato"></button>
       <button class="swatch" data-r="160" data-g="80"  data-b="255"
               style="background:#a050ff" title="Violet — subtle FM"></button>
       <button class="swatch" data-r="255" data-g="120" data-b="0"
@@ -37,8 +40,68 @@
       Speed
       <input type="range" id="speed" min="20" max="400" value="100" />
     </label>
+    <label class="ctrl">
+      Scale
+      <select id="scale">
+        <option value="pentatonic">A Min Pent.</option>
+        <option value="major">A Major</option>
+        <option value="minor">A Minor</option>
+        <option value="dorian">A Dorian</option>
+        <option value="wholetone">Whole Tone</option>
+      </select>
+    </label>
   </div>
 
-  <script type="module" src="src/app.js?v=11"></script>
+  <div id="info-overlay" class="hidden">
+    <div id="info-box">
+      <button id="btn-close-info">✕</button>
+      <h2>Color → Sound</h2>
+      <p>Each color channel controls a different dimension of synthesis. Mix colors to combine effects.</p>
+
+      <table id="legend">
+        <tbody>
+          <tr>
+            <td class="legend-swatch-cell">
+              <span class="legend-gradient" style="background:linear-gradient(to right,#111,#fff)"></span>
+            </td>
+            <td>
+              <strong>Brightness → Volume</strong>
+              <span>Brighter paint plays louder.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="legend-swatch-cell">
+              <span class="legend-gradient" style="background:linear-gradient(to right,#00f,#f00)"></span>
+            </td>
+            <td>
+              <strong>Warm (R&minus;B) → FM Depth</strong>
+              <span>Red/orange = buzzy, Blue/cyan = sine.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="legend-swatch-cell">
+              <span class="legend-gradient" style="background:linear-gradient(to right,#111,#0f0)"></span>
+            </td>
+            <td>
+              <strong>Green → Vibrato</strong>
+              <span>Green channel drives a 5.5 Hz LFO on pitch.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Palette guide</h3>
+      <ul id="swatch-guide">
+        <li><span class="dot" style="background:#fff"></span> White — loud, no FM, max vibrato</li>
+        <li><span class="dot" style="background:#00dcff"></span> Cyan — pure sine + strong vibrato</li>
+        <li><span class="dot" style="background:#00ff00"></span> Green — quiet, no FM, max vibrato</li>
+        <li><span class="dot" style="background:#a050ff"></span> Violet — no FM, subtle vibrato</li>
+        <li><span class="dot" style="background:#ff7800"></span> Orange — warm FM + medium vibrato</li>
+        <li><span class="dot" style="background:#ff143c"></span> Red — heavy FM, almost no vibrato</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module" src="src/app.js?v=13"></script>
 </body>
 </html>

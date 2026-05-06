@@ -1,6 +1,6 @@
 import { Synth, BAND_FREQS } from './synth.js';
 import { Sketch } from './sketch.js';
-import { N_BANDS } from './constants.js';
+import { N_BANDS, SCALES, buildFreqs } from './constants.js';
 
 // --- DOM ---
 const canvas = document.getElementById('canvas');
@@ -9,6 +9,10 @@ const btnPlay = document.getElementById('btn-play');
 const btnClear = document.getElementById('btn-clear');
 const brushInput = document.getElementById('brush-size');
 const speedInput = document.getElementById('speed');
+const scaleInput = document.getElementById('scale');
+const btnInfo = document.getElementById('btn-info');
+const infoOverlay = document.getElementById('info-overlay');
+const btnCloseInfo = document.getElementById('btn-close-info');
 
 // --- State ---
 let audioCtx = null;
@@ -101,8 +105,12 @@ document.querySelectorAll('.swatch').forEach(btn => {
 
 brushInput.addEventListener('input', () => { sketch.brushSize = Number(brushInput.value); });
 speedInput.addEventListener('input', () => { speed = Number(speedInput.value); });
+scaleInput.addEventListener('change', () => { synth?.retune(buildFreqs(SCALES[scaleInput.value])); });
 btnClear.addEventListener('click', () => { sketch.clear(); });
 btnPlay.addEventListener('click', () => playing ? pause() : play());
+btnInfo.addEventListener('click', () => { infoOverlay.classList.remove('hidden'); });
+btnCloseInfo.addEventListener('click', () => { infoOverlay.classList.add('hidden'); });
+infoOverlay.addEventListener('click', e => { if (e.target === infoOverlay) infoOverlay.classList.add('hidden'); });
 
 // --- Playback ---
 async function play() {
@@ -133,8 +141,8 @@ function playLoop(timestamp) {
   const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
   cursorX = (cursorX + speed * dt) % canvas.width;
-  const { amplitudes, fmAmounts } = sketch.readColumn(cursorX);
-  synth.update(amplitudes, fmAmounts);
+  const { amplitudes, fmAmounts, vibratoAmounts } = sketch.readColumn(cursorX);
+  synth.update(amplitudes, fmAmounts, vibratoAmounts);
   render(amplitudes);
 }
 

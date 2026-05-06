@@ -1,42 +1,32 @@
 /**
- * Synth — additive FM oscillator bank.
- * 32 bands are tuned to A minor pentatonic across 6+ octaves (A1–C8),
- * so any combination of notes the cursor reads will always sound in-key.
+ * Synth — additive FM oscillator bank with per-band vibrato.
+ * Bands are tuned to the selected scale across 6+ octaves (A1=55 Hz root).
  *
  * Per band:
- *   modulator → modGain → carrier.frequency 
- *   carrier → outGain → dry + reverb send
+ *   modulator  → modGain  → carrier.frequency  (FM)
+ *   lfo        → lfoGain  → carrier.frequency  (vibrato)
+ *   carrier    → outGain  → dry + reverb send
  *
- * update(amplitudes, fmAmounts) is called every animation frame.
- *   amplitudes[i] 0–1 → output gain of band i
- *   fmAmounts[i] 0–1 → FM modulation depth (warm color = more FM)
+ * update(amplitudes, fmAmounts, vibratoAmounts) called every animation frame.
+ *   amplitudes[i]     0–1 → output gain
+ *   fmAmounts[i]      0–1 → FM modulation depth  (warm/red = buzzy)
+ *   vibratoAmounts[i] 0–1 → LFO pitch wobble depth (green = shimmery)
  *
+ * retune(freqs) smoothly resets all oscillator frequencies (scale change).
  * Voice limiting: only the MAX_VOICES loudest bands play at once.
  */
 
-import { N_BANDS } from './constants.js';
+import { N_BANDS, SCALES, buildFreqs } from './constants.js';
 
-const MAX_FM_DEPTH = 160; // Hz of frequency deviation at fmAmount = 1
-const BAND_GAIN = 0.13; // per-band level (fewer voices → a bit louder each)
-const MAX_VOICES = 6; // max simultaneous oscillators
-const TC_ATTACK = 0.02; 
-const TC_RELEASE = 0.20; // so notes ring out after cursor passes
+const MAX_FM_DEPTH = 160;       // Hz deviation at fmAmount = 1
+const MAX_VIBRATO_DEPTH = 8;    // Hz deviation at vibratoAmount = 1
+const VIBRATO_RATE = 5.5;       // LFO Hz
+const BAND_GAIN = 0.13;
+const MAX_VOICES = 6;
+const TC_ATTACK = 0.02;
+const TC_RELEASE = 0.20;
 
-// A minor pentatonic: semitone offsets 0,3,5,7,10 repeating each octave from A1=55 Hz
-function buildPentatonicFreqs(n) {
-  const steps = [0, 3, 5, 7, 10];
-  const A1 = 55;
-  const freqs = [];
-  for (let oct = 0; freqs.length < n; oct++) {
-    for (const st of steps) {
-      freqs.push(A1 * Math.pow(2, oct + st / 12));
-      if (freqs.length >= n) break;
-    }
-  }
-  return freqs;
-}
-
-export const BAND_FREQS = buildPentatonicFreqs(N_BANDS);
+export const BAND_FREQS = buildFreqs(SCALES.pentatonic);
 
 export class Synth {
   constructor(ctx) {
@@ -66,8 +56,10 @@ export class Synth {
     this._bands = [];
     this._lastTarget = new Float32Array(N_BANDS);
 
+    const freqs = buildFreqs(SCALES.pentatonic);
+
     for (let i = 0; i < N_BANDS; i++) {
-      const freq = BAND_FREQS[i];
+      const freq = freqs[i];
 
       const outGain = ctx.createGain();
       outGain.gain.value = 0;
@@ -89,17 +81,28 @@ export class Synth {
       modGain.connect(car.frequency);
       car.connect(outGain);
 
+      // Vibrato LFO
+      const lfo = ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = VIBRATO_RATE;
+
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 0;
+
+      lfo.connect(lfoGain);
+      lfoGain.connect(car.frequency);
+
       mod.start();
       car.start();
+      lfo.start();
 
-      this._bands.push({ outGain, modGain });
+      this._bands.push({ outGain, modGain, lfoGain, car, mod });
     }
   }
 
-  update(amplitudes, fmAmounts) {
+  update(amplitudes, fmAmounts, vibratoAmounts) {
     const now = this.ctx.currentTime;
 
-    // Pick the MAX_VOICES loudest bands, silence the rest
     const order = Array.from({ length: N_BANDS }, (_, i) => i)
       .sort((a, b) => amplitudes[b] - amplitudes[a]);
     const active = new Set(order.slice(0, MAX_VOICES));
@@ -109,7 +112,16 @@ export class Synth {
       const tc = target > this._lastTarget[i] ? TC_ATTACK : TC_RELEASE;
       this._bands[i].outGain.gain.setTargetAtTime(target * BAND_GAIN, now, tc);
       this._bands[i].modGain.gain.setTargetAtTime(fmAmounts[i] * MAX_FM_DEPTH, now, tc);
+      this._bands[i].lfoGain.gain.setTargetAtTime(vibratoAmounts[i] * MAX_VIBRATO_DEPTH, now, tc);
       this._lastTarget[i] = target;
+    }
+  }
+
+  retune(freqs) {
+    const now = this.ctx.currentTime;
+    for (let i = 0; i < N_BANDS; i++) {
+      this._bands[i].car.frequency.setTargetAtTime(freqs[i], now, 0.05);
+      this._bands[i].mod.frequency.setTargetAtTime(freqs[i] * 2, now, 0.05);
     }
   }
 
